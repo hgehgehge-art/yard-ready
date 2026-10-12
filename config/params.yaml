@@ -1,0 +1,127 @@
+# YARD READY 데모 가정값
+# 이 파일의 모든 값은 시연용 '가정'입니다. 부산항 실측치가 아닙니다.
+# 시각은 시연일 00:00 기준 분(min)으로 계산하고, 화면에서는 HH:MM으로 표시합니다.
+
+app_name: "YARD READY"            # 가정: 임시 이름. 이 값 하나로 앱 이름을 바꿉니다.
+tagline: "CY 배치 지원 · 도착 불확실성 반영"
+seed: 26                           # 가정: 기본 시드
+
+yard:
+  block: "A1"                      # 가정: 블록 1개
+  bays: 8                          # 가정: 베이 8
+  rows: 6                          # 가정: 로우 6
+  max_tier: 5                      # 가정: 최대 5단
+  occupancy: 0.65                  # 가정: 시연 시작 시각 기준 초기 장치율 (S3는 scenarios.yaml에서 0.92)
+  vessel_bays:                     # 가정: 선박별 배정 베이(0부터 셈)
+    V1: [0, 1, 2, 3]
+    V2: [4, 5, 6, 7]
+  filler_max_height: 2             # 가정: 다음 항차 선반입 컨테이너는 스택 아래쪽에만 있음
+
+vessels:                           # 가정: Port-i(모의) 선박 일정
+  - {vessel_id: V1, name: "HYUNDAI BUSAN", voyage: "0412E", berth_start: "16:00", berth_end: "23:00", cutoff_lead_min: 60, n_min: 60, n_max: 80}
+  - {vessel_id: V2, name: "KMTC ULSAN", voyage: "2210W", berth_start: "21:00", berth_end: "29:00", cutoff_lead_min: 60, n_min: 60, n_max: 80}
+
+workplan:
+  groups: 4                        # 가정: 선박당 인출 그룹 4개 (1 = 가장 먼저 인출)
+  initial_version: 3               # 가정: 시연 시작 시 작업계획 v3
+  same_group_swap: true            # 가정: 같은 그룹 컨테이너가 위에 있으면 순번을 바꿔 먼저 인출(재취급 아님)
+  group_assign_before_berth_min: 600  # 가정: 인출 그룹은 선박 작업 시작 10시간 전(작업계획 v2)에 배정. 그 전 반입분은 그룹을 모른 채 장치됨
+
+booking:
+  window_hours: 48                 # 가정: 마감 전 48시간에 예약 분포
+  rush_share: 0.45                 # 가정: 예약의 45%가 마감 직전 rush_hours 안에 몰림
+  rush_hours: 4
+  tail_beta: 2.6                   # 가정: 나머지는 마감에 가까울수록 많아지는 Beta(1, 2.6)
+  hourly_cap: 14                   # 가정: 선박별 시간대 예약 용량 상한(대)
+  initial_issue_lead_min: 120      # 가정: 예약 기반 첫 ETA를 예약시각 120분 전에 발행
+
+carriers:                          # 가정: 운송사별 도착 편차 성향(분). history_days는 이력이 쌓인 기간
+  - {id: C1, name: "한빛운송", mean: 4, sd: 8, share: 0.22, history_days: 60}
+  - {id: C2, name: "동남물류", mean: -6, sd: 7, share: 0.18, history_days: 60}
+  - {id: C3, name: "부경트랜스", mean: 14, sd: 12, share: 0.18, history_days: 60}
+  - {id: C4, name: "새벽로지스", mean: 2, sd: 5, share: 0.16, history_days: 60}
+  - {id: C5, name: "해오름운수", mean: 22, sd: 16, share: 0.16, history_days: 60}
+  - {id: C6, name: "온길운송", mean: -2, sd: 10, share: 0.10, history_days: 60}
+  - {id: C7, name: "누리카고(신규)", mean: 10, sd: 25, share: 0.0, history_days: 3}
+
+arrival:
+  congestion_by_hour:              # 가정: 시간대별 혼잡 계수(분). 키 = 시(hour)
+    7: 6
+    8: 10
+    9: 6
+    12: 4
+    13: 6
+    14: 8
+    17: 12
+    18: 14
+    19: 8
+  travel_mean_min: 65              # 가정: 출발지→항만 평균 소요
+  travel_sd_min: 12
+  checkpoints:                     # 가정: 구간 통과 지점과 전체 경로 대비 위치
+    - {name: "출발", frac: 0.0}
+    - {name: "중간 지점 1", frac: 0.35}
+    - {name: "중간 지점 2", frac: 0.70}
+    - {name: "항만 진입로", frac: 0.90}
+  leg_noise: 0.12                  # 가정: 구간별 소요시간 변동 비율
+  gate_to_cy_mean_min: 12          # 가정: 게이트 도착 → CY 하차 가능까지 터미널 내부 대기·이동
+  gate_to_cy_sd_min: 4
+  handling_min: 8                  # 가정: 하차 작업 시간
+
+history:
+  days: 60                         # 가정: 과거 이력 60일분
+  trips_per_day: 40
+  train_days: 45                   # 가정: 앞 45일 학습, 뒤 15일 검증(시간순 분할)
+  min_group_n: 30                  # 가정: 운송사×시간대 집단의 최소 표본 수. 미만이면 운송사 전체 → 전체 이력으로 대체
+  min_carrier_n: 40
+
+eta_model:
+  use_gbm: true                    # 가정: 후보모델(GBM)도 학습해 검증값을 비교
+  gbm_estimators: 120
+  gbm_depth: 3
+  gbm_learning_rate: 0.08
+
+crane:
+  slot_min: 15                     # 가정: 크레인 작업량 집계 단위 15분
+  cap_per_slot: 6                  # 가정: 15분당 작업 상한 6회
+  idle_ratio: 0.5                  # 가정: 상한의 50% 미만이면 유휴 시간대
+  housekeeping_rate: 0.8           # 가정: 15분당 기타 작업 평균(포아송)
+  move_min: 2.5                    # 가정: 이동 1회 2.5분
+  retrieval_per_slot: 6            # 가정: 선적 작업 중 15분당 인출 6회
+
+recommender:
+  n_samples: 200                   # 가정: 몬테카를로 표본 수
+  n_screen: 40                     # 가정: 1차 후보 선별용 표본 수
+  lambda: 0.1                      # 가정: 점수 = E[추가 이동] + λ × E[야드 공급 지연(분)]
+  max_delay_increase_min: 5        # 가정: 유지안보다 공급 지연이 5분 이상 늘면 추천 제외
+  max_premarshal: 3                # 가정: 한 번에 제안하는 선작업 최대 3회
+  hold:
+    max_width_min: 40              # 가정: p90 − p10 > 40분이면 보류
+    max_staleness_min: 30          # 가정: 마지막 ETA 발행 후 30분 초과면 보류
+    min_benefit: 0.5               # 가정: 유지안 대비 예상 절감 0.5회 미만이면 보류
+
+classification:
+  delay_threshold_min: 15          # 가정: p50 − 예약 > +15분 지연, < −15분 조기
+  upper_groups: [1, 2]             # 가정: 그룹 1·2 선적 상위, 3·4 하위
+
+review:
+  horizon_min: 240                 # 가정: 지금부터 4시간 안에 예약된 컨테이너를 검토 대상으로 봄
+  deviation_min: 20                # 가정: 예약 대비 편차가 20분을 넘거나 마감 초과·구간 과대면 검토 필요
+
+truck:
+  base_dwell_min: 22               # 가정: 트럭 터미널 체류 기본값(게이트 인 → 게이트 아웃)
+  wait_per_job_min: 1.25           # 가정: 같은 15분 슬롯 작업 1건당 대기 증가
+
+experiment:
+  start: "06:00"                   # 가정: 정책 비교는 06:00부터 두 정책을 같은 조건으로 돌림
+  default_seeds: 8
+  grid_seeds: 10
+  n_samples: 6                     # 가정: 자동 비교에서 쓰는 몬테카를로 표본 수(속도 때문에 축소)
+  max_candidates: 6
+  lookahead_min: 240               # 가정: 자동 비교에서는 결정 시각부터 4시간 안에 도착할 컨테이너까지만 내다봄(속도)
+  occupancy_levels: {"낮음": 0.5, "보통": 0.65, "높음": 0.8}  # 가정: 목표 장치율. V1 구역은 오늘 반입분을 받을 공간을 남기도록 선반입 수를 줄이므로 실제 시작 장치율은 결과에 따로 표시
+  eta_error_levels: [1.0, 1.5, 2.0]
+  plan_change_share: 0.2           # 가정: 계획 변경 시 인출 그룹이 바뀌는 컨테이너 비율
+  plan_change_time: "15:00"
+  urgent_extra_load: 3             # 가정: 긴급 작업 유입 시 일부 15분 슬롯에 작업 3건 추가
+  urgent_slot_share: 0.4
+  target_reduction_pct: 10         # 기획서의 실증 잠정 목표(시뮬레이션 결과와 구분)

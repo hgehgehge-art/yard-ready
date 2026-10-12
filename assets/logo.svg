@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="40" viewBox="0 0 220 40">
+  <g fill="none" stroke="#00D4FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" transform="translate(2,3) scale(1.4)">
+    <rect x="2.5" y="13" width="7" height="4" rx=".6"/><rect x="2.5" y="17.5" width="7" height="4" rx=".6"/><rect x="10.5" y="17.5" width="7" height="4" rx=".6"/>
+    <circle cx="17" cy="7.5" r="5"/><path d="M17 5v2.7l1.8 1.2"/>
+  </g>
+  <text x="46" y="27" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="21" font-weight="800" fill="#E6EDF7" letter-spacing="-0.3">YARD <tspan fill="#00D4FF">READY</tspan></text>
+</svg>

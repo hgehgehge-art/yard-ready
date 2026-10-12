@@ -1,0 +1,68 @@
+# 시연 시나리오 스크립트 (가정)
+# 시나리오 사건은 시연용으로 고정하고, 나머지 컨테이너의 사건은 같은 시드의 합성 규칙으로 생성합니다.
+# containers: 시나리오에서 고정하는 컨테이너(예약시각·선박·인출 그룹·운송사·실제 도착)
+# 사건 종류: eta_update, gate_in, plan_change, urgent_job, retrieval_start
+
+S1:
+  title: "대표: 도착 지연 × 선적 상위"
+  summary: "선적 그룹 1 컨테이너의 ETA가 예약 14:00보다 20~40분 늦게 갱신됩니다."
+  seed: 26
+  start: "13:30"
+  focus_cntr: "HMMU1234567"
+  containers:
+    - {cntr: HMMU1234567, vessel: V1, booking: "14:00", group: 1, carrier: C3, actual: "14:31"}
+    - {cntr: KMTU7654321, vessel: V1, booking: "14:00", group: 3, carrier: C4, actual: "14:04"}
+  events:
+    - {t: "13:35", type: eta_update, cntr: HMMU1234567, p10: "14:20", p50: "14:30", p90: "14:40", note: "중간 지점 2 통과"}
+    - {t: "13:50", type: eta_update, cntr: KMTU7654321, p10: "13:55", p50: "14:02", p90: "14:10", note: "항만 진입로 통과"}
+    - {t: "14:31", type: gate_in, cntr: HMMU1234567}
+    - {t: "16:00", type: retrieval_start, vessel: V1}
+
+S2:
+  title: "예측 오류: 구간이 넓음"
+  summary: "이력이 적은 운송사 트럭의 ETA 구간이 13:50~15:30으로 넓습니다."
+  seed: 26
+  start: "13:30"
+  focus_cntr: "NRCU3141592"
+  containers:
+    - {cntr: NRCU3141592, vessel: V1, booking: "14:00", group: 1, carrier: C7, actual: "14:47"}
+  events:
+    - {t: "13:35", type: eta_update, cntr: NRCU3141592, p10: "13:50", p50: "14:30", p90: "15:30", note: "출발 (과거 이력 3일분)"}
+    - {t: "14:47", type: gate_in, cntr: NRCU3141592}
+    - {t: "16:00", type: retrieval_start, vessel: V1}
+
+S3:
+  title: "공간 부족: 높은 장치율"
+  summary: "블록 장치율이 92%라 제약을 만족하는 슬롯이 거의 없습니다."
+  seed: 26
+  start: "13:30"
+  occupancy: 0.92
+  layout:                        # V1 구역(베이 01~04) 스택 높이. 베이 03만 빈 스택이 하나 남아 있음
+    V1:
+      - [5, 5, 5, 5, 5, 5]
+      - [5, 5, 4, 5, 5, 5]
+      - [5, 5, 5, 3, 5, 0]
+      - [5, 5, 5, 5, 5, 5]
+  focus_cntr: "SKLU2468101"
+  containers:
+    - {cntr: SKLU2468101, vessel: V1, booking: "14:00", group: 1, carrier: C3, actual: "14:31"}
+  events:
+    - {t: "13:35", type: eta_update, cntr: SKLU2468101, p10: "14:20", p50: "14:30", p90: "14:40", note: "중간 지점 2 통과"}
+    - {t: "14:31", type: gate_in, cntr: SKLU2468101}
+    - {t: "16:00", type: retrieval_start, vessel: V1}
+
+S4:
+  title: "선박 일정 변경"
+  summary: "승인 대기 중에 선박 작업 시작이 2시간 당겨집니다(작업계획 v3 → v4)."
+  seed: 26
+  start: "13:30"
+  vessel_overrides:
+    V1: {berth_start: "18:00", berth_end: "25:00"}
+  focus_cntr: "PCIU5551234"
+  containers:
+    - {cntr: PCIU5551234, vessel: V1, booking: "14:40", group: 1, carrier: C5, actual: "15:12"}
+  events:
+    - {t: "13:35", type: eta_update, cntr: PCIU5551234, p10: "14:55", p50: "15:08", p90: "15:25", note: "출발"}
+    - {t: "13:40", type: plan_change, vessel: V1, new_version: 4, berth_shift_min: -120}
+    - {t: "15:12", type: gate_in, cntr: PCIU5551234}
+    - {t: "16:00", type: retrieval_start, vessel: V1}
